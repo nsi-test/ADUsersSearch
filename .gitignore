@@ -1,5 +1,7 @@
 Microsoft/
 separ/
+old/
+pics/
 *.txt
 *.config
 *.exe
