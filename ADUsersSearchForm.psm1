@@ -16,6 +16,8 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 	[System.Windows.Forms.ToolStripStatusLabel] $labelRight
 
+	[System.Windows.Forms.CheckBox] $HideDisabledChBox #for allow/disallow disabled users in search results
+
 	[System.Drawing.Font] $strikeFont
 
 	ADSearchForm() {
@@ -28,7 +30,7 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 		$this.Text = "Active Directory Users Search v$global:ADUSVersion"
 		$this.Text += " (running as: $([System.Security.Principal.WindowsIdentity]::GetCurrent().Name))"
-		$this.Size = [System.Drawing.Size]::New(940,620) #plus e-mail tbox (20)
+		$this.Size = [System.Drawing.Size]::New(1000,620) #plus e-mail tbox (20) ; W beshe 940
 		$this.StartPosition = "CenterScreen"
 
 		$panelTop = [System.Windows.Forms.Panel]::New()
@@ -122,6 +124,14 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 		$this.dataGrid.Add_CellFormatting({$thisForm.CellFormattingChanged($thisForm.DataGrid, $_)}.GetNewClosure())
 
+		$this.HideDisabledChBox = [System.Windows.Forms.CheckBox]::New()
+		$this.HideDisabledChBox.Text = "Hide disabled users"
+		$this.HideDisabledChBox.Location = [System.Drawing.Point]::new(400, 100)
+		$this.HideDisabledChBox.AutoSize = $true
+		$panelTop.Controls.Add($this.HideDisabledChBox)
+		$this.HideDisabledChBox.Add_CheckedChanged({$thisForm.HideDisabledChBoxChanged($thisForm.HideDisabledChBox, $_)}.GetNewClosure())
+
+
 		$this.Add_Shown({$thisForm.textBoxes["First Name"].Focus()}.GetNewClosure())
 
 	} #constructor
@@ -154,6 +164,11 @@ Class ADSearchForm : System.Windows.Forms.Form {
 				} #colName -ne Enabled
 			} #dgvitem enabled check
 		} # CellFormattingChanged function
+
+		[void] HideDisabledChBoxChanged([System.Windows.Forms.CheckBox] $sender, [System.EventArgs] $e) {
+			$this.SearchClick() #just re-run search to apply/hide disabled users in results
+		}	
+
 
 
 	[Object[]] GetADUsers() {
@@ -224,8 +239,10 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 			Write-Host "phonesearchstr before query: $($PhoneSearchStr)"
 
-			$results = Get-ADUser -Filter $filter -Properties GivenName, Surname, Description, telephoneNumber, physicalDeliveryOfficeName, mail, Enabled | 
-				Where-Object {$_.telephoneNumber -like $PhoneSearchStr}
+			$results = Get-ADUser -Filter $filter -Properties GivenName, Surname, Description, telephoneNumber, otherTelephone, physicalDeliveryOfficeName, mail, Enabled | 
+				Where-Object {
+					$_.telephoneNumber -like $PhoneSearchStr -and (-not $this.HideDisabledChBox.Checked -or $_.Enabled)
+				}
 
 			Write-host "Results:`n$($results | Out-String)"
 
@@ -240,7 +257,8 @@ Class ADSearchForm : System.Windows.Forms.Form {
 			Description,
 			@{Name = "Office"; Expression = { $_.physicalDeliveryOfficeName } },
 			@{Name = "E-Mail"; Expression = { $_.mail } },
-			@{Name = "Phone"; Expression = { $_.telephoneNumber } }
+			@{Name = "Phone"; Expression = { $_.telephoneNumber } },
+			@{Name = "Phone2"; Expression = { $_.otherTelephone[0] } }
 
 		
 			Write-Host "Output: $($output | out-string)"
