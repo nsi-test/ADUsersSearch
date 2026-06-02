@@ -20,6 +20,10 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 	[System.Drawing.Font] $strikeFont
 
+	[string] $LastSortColumn = "UserName"
+
+	[System.ComponentModel.ListSortDirection] $LastSortDirection = [System.ComponentModel.ListSortDirection]::Ascending
+
 	ADSearchForm() {
 
 		$thisForm = $this #for event handlers
@@ -35,10 +39,10 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 		$panelTop = [System.Windows.Forms.Panel]::New()
 		$panelTop.Dock = [System.Windows.Forms.DockStyle]::Top
-		$panelTop.Height = 230 #tested
+		$panelTop.Height = 260 #tested (after memcer of groups)
 
 		# --- Labels and TextBoxes ---
-		$this.labels = @("First Name", "Last Name", "Description", "Office", "Phone", "E-mail", "UserName")
+		$this.labels = @("First Name", "Last Name", "Description", "Office", "Phone", "E-mail", "UserName", "Contained in/under OU")
 		$this.textBoxes = @{}
 
 		for ($i = 0; $i -lt $this.labels.Count; $i++) {
@@ -85,6 +89,11 @@ Class ADSearchForm : System.Windows.Forms.Form {
 		$this.dataGrid.Location = [System.Drawing.Point]::new(10, 240) #plus e-mail tbox
 		$this.dataGrid.Size = [System.Drawing.Size]::New(900, 320)
 		$this.dataGrid.AutoSizeColumnsMode = 'Fill'
+		$this.dataGrid.ReadOnly = $true
+		$this.dataGrid.AllowUserToAddRows = $false
+		$this.dataGrid.AllowUserToDeleteRows = $false
+		$this.dataGrid.SelectionMode = 'FullRowSelect'
+		$this.dataGrid.MultiSelect = $true
 		$this.Controls.Add($this.dataGrid)
 
 		$this.Controls.Add($panelTop) # Then Top panel with  after DataGrid to be on top
@@ -161,6 +170,7 @@ Class ADSearchForm : System.Windows.Forms.Form {
 				$colName = $grid.Columns[$e.ColumnIndex].Name
 				if ($colName -ne "Enabled") {
 					$e.CellStyle.Font = $this.strikeFont
+					$e.CellStyle.ForeColor = [System.Drawing.Color]::Red
 				} #colName -ne Enabled
 			} #dgvitem enabled check
 		} # CellFormattingChanged function
@@ -223,6 +233,14 @@ Class ADSearchForm : System.Windows.Forms.Form {
 				$filterParts += "SamAccountName -like '*$($this.textBoxes["UserName"].Text)*'"
 			}
 
+			if ($this.textBoxes["Contained in/under OU"].Text) {
+				$ouFilter = "*OU=$($this.textBoxes["Contained in/under OU"].Text),*" #the coma is limitinq the specific OU
+				# We will filter by OU after getting results, because AD filter does not support distinguishedname directly by wildcard, etc. (!)
+				$filterParts += "distinguishedName -like '*'" #we need to get all users and then filter by OU in Where-Object
+			} else {
+				$ouFilter = '*' #everything
+			}
+
 			if ($filterParts.Count -eq 0) {
 				#[System.Windows.Forms.MessageBox]::Show("Please enter at least one search criteria.")
 				$this.labelLeft.ForeColor = [System.Drawing.Color]::Red
@@ -239,9 +257,11 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 			Write-Host "phonesearchstr before query: $($PhoneSearchStr)"
 
+			Write-Host "ouFilter before query: $($ouFilter)"
+
 			$results = Get-ADUser -Filter $filter -Properties GivenName, Surname, Description, telephoneNumber, otherTelephone, physicalDeliveryOfficeName, mail, Enabled | 
 				Where-Object {
-					$_.telephoneNumber -like $PhoneSearchStr -and (-not $this.HideDisabledChBox.Checked -or $_.Enabled)
+					$_.telephoneNumber -like $PhoneSearchStr -and $_.distinguishedName -like $ouFilter -and (-not $this.HideDisabledChBox.Checked -or $_.Enabled)
 				}
 
 			Write-host "Results:`n$($results | Out-String)"
@@ -289,6 +309,20 @@ Class ADSearchForm : System.Windows.Forms.Form {
 		$this.labelLeft.Text = "working..."
 		#start-sleep -seconds 5 #simulate work to check status label color
 
+		if ($this.dataGrid.SortedColumn) {
+			$this.LastSortColumn = $this.dataGrid.SortedColumn.Name
+
+			$this.LastSortDirection = if (
+				$this.dataGrid.SortOrder -eq [System.Windows.Forms.SortOrder]::Descending
+			) {
+				[System.ComponentModel.ListSortDirection]::Descending
+			}
+			else {
+				[System.ComponentModel.ListSortDirection]::Ascending
+			}
+		} #this guards from the different types of SortOrder (None, Ascending, Descending) and sets the LastSortDirection accordingly for later use after search results are updated in datagrid
+
+
 		$output = $this.GetADUsers()
 
 		if (! $output) {
@@ -304,7 +338,8 @@ Class ADSearchForm : System.Windows.Forms.Form {
 		}
 
 		#sort output by UserName (samAccountName)
-		$output = $output |Sort-Object UserName
+		#$output = $output |Sort-Object UserName
+		# now we have inital column and sort order in declaring, so we don't need to sort the output here
 
 		$table = [System.Data.DataTable]::New()
 
@@ -323,6 +358,11 @@ Class ADSearchForm : System.Windows.Forms.Form {
 		
 		#datagrid datasource is table
 		$this.DataGrid.DataSource = $table
+
+		$this.dataGrid.Sort(
+        	$this.dataGrid.Columns[$this.LastSortColumn],
+        	$this.LastSortDirection
+    	)
 
 
 	} # SearchClick function
