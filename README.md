@@ -9,7 +9,7 @@ Powershell compiled executable gui for listing AD users by specific fields.
 
 - For seeng all details, executing the exe or ps1 must be done by user with appropriate rights on AD.
 
-- Needs Installed RSAT.
+- It doesn't need installed RSAT (This was in former versions). Uses .NET Directory Services directly.
 
 - AI assisted for some topics
 

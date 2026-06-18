@@ -4,7 +4,7 @@ using module ".\ADUSIconB64.psm1"
 
 using module ".\ADUsersSearchForm.psm1"
 
-Set-Variable -Name ADUSVersion -Value "1.3.0" -Option ReadOnly -Force -Scope global
+Set-Variable -Name ADUSVersion -Value "2.0.0" -Option ReadOnly -Force -Scope global
 
 $appForm = [ADSearchForm]::New()
 

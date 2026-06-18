@@ -24,6 +24,8 @@ Class ADSearchForm : System.Windows.Forms.Form {
 
 	[System.ComponentModel.ListSortDirection] $LastSortDirection = [System.ComponentModel.ListSortDirection]::Ascending
 
+	[System.DirectoryServices.DirectorySearcher] $ADSearcher
+
 	ADSearchForm() {
 
 		$thisForm = $this #for event handlers
@@ -97,6 +99,21 @@ Class ADSearchForm : System.Windows.Forms.Form {
 		$this.Controls.Add($this.dataGrid)
 
 		$this.Controls.Add($panelTop) # Then Top panel with  after DataGrid to be on top
+
+		# -- ADSearcher
+		$this.ADSearcher = [System.DirectoryServices.DirectorySearcher]::New()
+		$this.ADSearcher.PropertiesToLoad.Add("givenname")
+		$this.ADSearcher.PropertiesToLoad.Add("sn")
+		$this.ADSearcher.PropertiesToLoad.Add("description")
+		$this.ADSearcher.PropertiesToLoad.Add("telephoneNumber")
+		$this.ADSearcher.PropertiesToLoad.Add("othertelephone")
+		$this.ADSearcher.PropertiesToLoad.Add("physicaldeliveryofficeName")
+		$this.ADSearcher.PropertiesToLoad.Add("mail")
+		$this.ADSearcher.PropertiesToLoad.Add("samaccountName")
+		$this.ADSearcher.PropertiesToLoad.Add("distinguishedname")
+		$this.ADSearcher.PropertiesToLoad.Add("useraccountcontrol")
+
+
 
 		# --- StatusStrip (bottom band) ---
 		$this.statusStrip = [System.Windows.Forms.StatusStrip]::new()
@@ -179,118 +196,147 @@ Class ADSearchForm : System.Windows.Forms.Form {
 			$this.SearchClick() #just re-run search to apply/hide disabled users in results
 		}	
 
+	[hashtable] BuildLDAPFilter() {
+
+		$filterParts = @()
+
+		if ($this.textBoxes["First Name"].Text) {
+    		$filterParts += "(givenName=*$($this.textBoxes['First Name'].Text)*)"
+		}
+
+		if ($this.textBoxes["Last Name"].Text) {
+    		$filterParts += "(sn=*$($this.textBoxes['Last Name'].Text)*)"
+		}
+
+		if ($this.textBoxes["Description"].Text) {
+    		$filterParts += "(description=*$($this.textBoxes['Description'].Text)*)"
+		}
+
+		if ($this.textBoxes["Office"].Text) {
+    		$filterParts += "(physicaldeliveryOfficeName=*$($this.textBoxes['Office'].Text)*)"
+		}
+
+		if ($this.textBoxes["E-mail"].Text) {
+    		$filterParts += "(mail=*$($this.textBoxes['E-mail'].Text)*)"
+		}
+
+		if ($this.textBoxes["UserName"].Text) {
+    		$filterParts += "(samaccountName=*$($this.textBoxes['UserName'].Text)*)"
+		}
+
+		#phone
+		if ($this.textBoxes["Phone"].Text) {
+
+			$PhoneSearchStr = "*$($this.textBoxes["Phone"].Text)" #human input for the end of string
+
+			Write-Host "PhoneSearchStr: $($PhoneSearchStr)"
+
+			$PhoneFilterPart = $this.textBoxes["Phone"].Text.Replace('?', '*') #substitute '?' with '*' for filter part, because AD filter does not support '?'
+
+			Write-Host "PhoneFilterPart: $($PhoneFilterPart)"
+
+			$filterParts += "(telephonenumber=*$PhoneFilterPart*)"
+		}
+		else {
+
+			$PhoneSearchStr = '*' #everything
+
+			Write-Host "PhoneSearchStr: $($PhoneSearchStr)"
+
+		}
+		#/phone
+
+		#in/under OU
+		if ($this.textBoxes["Contained in/under OU"].Text) {
+			$ouFilter = "*OU=$($this.textBoxes["Contained in/under OU"].Text),*" #the coma is limitinq the specific OU
+			# We will filter by OU after getting results, because AD filter does not support distinguishedname directly by wildcard, etc. (!)
+			$filterParts += "(distinguishedname=*)" #we need to get all users and then filter by OU in Where-Object
+		}
+		else {
+			$ouFilter = '*' #everything
+		}
+		#/in/under OU
+
+		$filter = "(&(objectCategory=person)(objectClass=user)$($filterParts -join ''))"
+
+		$LDAPFIlterparts = @{}
+
+		$LDAPFIlterparts['mainfilter'] = $filter
+
+		$LDAPFIlterparts['PhoneSearchStr'] = $PhoneSearchStr
+
+		$LDAPFIlterparts['ouFilter'] = $ouFilter
+
+		Return $LDAPFIlterparts
+	}
 
 
 	[Object[]] GetADUsers() {
 		#
 		try {
 			# Build dynamic filter (AND logic)
-			$filterParts = @()
-
-			if ($this.textBoxes["First Name"].Text) {
-				$filterParts += "GivenName -like '*$($this.textBoxes["First Name"].Text)*'"
-			}
-			if ($this.textBoxes["Last Name"].Text) {
-				$filterParts += "Surname -like '*$($this.textBoxes["Last Name"].Text)*'"
-			}
-			if ($this.textBoxes["Description"].Text) {
-				$filterParts += "Description -like '*$($this.textBoxes["Description"].Text)*'"
-			}
-			if ($this.textBoxes["Office"].Text) {
-				$filterParts += "Office -like '*$($this.textBoxes["Office"].Text)*'"
-			}
-			<#
-			if ($this.textBoxes["Phone"].Text) {
-				$filterParts += "telephoneNumber -like '*$($this.textBoxes["Phone"].Text)'"
-			}
-			#>
-
-			if ($this.textBoxes["Phone"].Text) {
-
-				$PhoneSearchStr = "*$($this.textBoxes["Phone"].Text)" #human input for the end of string
-
-				Write-Host "PhoneSearchStr: $($PhoneSearchStr)"
-
-				$PhoneFilterPart = $this.textBoxes["Phone"].Text.Replace('?', '*') #substitute '?' with '*' for filter part, because AD filter does not support '?'
-
-				Write-Host "PhoneFilterPart: $($PhoneFilterPart)"
-
-				$filterParts += "telephoneNumber -like '*$($PhoneFilterPart)*'"
-			}
-			else {
-
-				$PhoneSearchStr = '*' #everything
-
-				Write-Host "PhoneSearchStr: $($PhoneSearchStr)"
-
-			}
 
 
-			if ($this.textBoxes["E-mail"].Text) {
-				$filterParts += "mail -like '*$($this.textBoxes["E-mail"].Text)*'"
-			}
-			if ($this.textBoxes["UserName"].Text) {
-				$filterParts += "SamAccountName -like '*$($this.textBoxes["UserName"].Text)*'"
-			}
+			# Query AD
+			$LDAPFilterResults = $this.BuildLDAPFIlter()
 
-			if ($this.textBoxes["Contained in/under OU"].Text) {
-				$ouFilter = "*OU=$($this.textBoxes["Contained in/under OU"].Text),*" #the coma is limitinq the specific OU
-				# We will filter by OU after getting results, because AD filter does not support distinguishedname directly by wildcard, etc. (!)
-				$filterParts += "distinguishedName -like '*'" #we need to get all users and then filter by OU in Where-Object
-			} else {
-				$ouFilter = '*' #everything
-			}
-
-			if ($filterParts.Count -eq 0) {
+			Write-Host "main LDAP filter before query: $($LDAPFilterResults['mainfilter'])"
+		
+			#when user enters nothing
+			If ($LDAPFilterResults['mainfilter'] -eq "(&(objectCategory=person)(objectClass=user))") {
 				#[System.Windows.Forms.MessageBox]::Show("Please enter at least one search criteria.")
 				$this.labelLeft.ForeColor = [System.Drawing.Color]::Red
 				$this.labelLeft.Text = "Please enter at least one search criteria."
 				return @()
 			}
 
-			$filter = $filterParts -join " -and "
-		
-			Write-Host "filter is: $($filter)"
+			Write-Host "phonesearchstr before query: $($LDAPFilterResults['PhoneSearchStr'])"
 
-			# Query AD
-			#$results = Get-ADUser -Filter $filter -Properties GivenName, Surname, Description, telephoneNumber, physicalDeliveryOfficeName, mail, Enabled
+			Write-Host "ouFilter before query: $($LDAPFilterResults['ouFilter'])"
 
-			Write-Host "phonesearchstr before query: $($PhoneSearchStr)"
-
-			Write-Host "ouFilter before query: $($ouFilter)"
-
+			<#
 			$results = Get-ADUser -Filter $filter -Properties GivenName, Surname, Description, telephoneNumber, otherTelephone, physicalDeliveryOfficeName, mail, Enabled | 
 				Where-Object {
 					$_.telephoneNumber -like $PhoneSearchStr -and $_.distinguishedName -like $ouFilter -and (-not $this.HideDisabledChBox.Checked -or $_.Enabled)
 				}
+			#>
 
-			Write-host "Results:`n$($results | Out-String)"
+			$this.ADSearcher.Filter = $LDAPFilterResults['mainfilter']
+
+			$results = $this.ADSearcher.FindAll()
+
+			$results = $results.properties | 
+				Where-Object {
+					$_.telephonenumber -like $LDAPFilterResults['PhoneSearchStr'] -and $_.distinguishedname -like $LDAPFilterResults['ouFilter'] -and (-not $this.HideDisabledChBox.Checked -or (-not ([int]$_.useraccountcontrol[0] -band 2)))
+				}
+
+			#Write-host "Results:`n$($results | Out-String)"
 
 
 			# Prepare output
-
-			$output = $results | Select-Object `
-			@{Name = "UserName"; Expression = { $_.samAccountName } },
-			Enabled,
-			GivenName,
-			Surname,
-			Description,
-			@{Name = "Office"; Expression = { $_.physicalDeliveryOfficeName } },
-			@{Name = "E-Mail"; Expression = { $_.mail } },
-			@{Name = "Phone"; Expression = { $_.telephoneNumber } },
-			@{Name = "Phone2"; Expression = { $_.otherTelephone[0] } }
-
 		
-			Write-Host "Output: $($output | out-string)"
+			$output = $results | Select-Object `
+			@{Name = "UserName"; Expression = { $_.samaccountname } },
+			@{Name = "Enabled"; Expression = {if (-not ([int]$_.useraccountcontrol[0] -band 2)) {$true} else {$false} }},
+			@{Name = "GivenName"; Expression = { $_.givenname } },
+			@{Name = "Surname"; Expression = { $_.sn } },
+			@{Name = "Description" ; Expression = { $_.description } },
+			@{Name = "Office"; Expression = { $_.physicaldeliveryofficename } },
+			@{Name = "E-Mail"; Expression = { $_.mail } },
+			@{Name = "Phone"; Expression = { $_.telephonenumber } },
+			@{Name = "Phone2"; Expression = { $_.othertelephone[0] } }
 
-			Write-Host "phonesearchstr after query: $($PhoneSearchStr)"
+			#Write-Host "Output: $($output | out-string)"
+
+			Write-Host "phonesearchstr after query: $($LDAPFilterResults['PhoneSearchStr'])"
+
+			Write-Host "ouFilter after query: $($LDAPFilterResults['ouFilter'])"
+
+			Write-Host "main LDAP filter after query (clarity): $($LDAPFilterResults['mainfilter'])"
 			
 			return $output
 
-			
-
-
-		}
+		} #try
 		catch {
 			[System.Windows.Forms.MessageBox]::Show("Datagrid Error: $_")
 			$this.labelLeft.ForeColor = [System.Drawing.Color]::Red
