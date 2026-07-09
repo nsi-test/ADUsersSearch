@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+<!-- Fill in your configuration here -->
+  <DomainSearchBases>
+    <!-- Search base for mail/contacts -  all users -->
+    <Root distinguishedName="DC=example,DC=com"  />
+    <!-- Search bases for ordinary users -->
+    <OU distinguishedName="OU=Department1,OU=City1,DC=example,DC=com" />
+    <OU distinguishedName="OU=Department2,OU=City1,DC=example,DC=com" />
+  </DomainSearchBases>
+</Configuration>
