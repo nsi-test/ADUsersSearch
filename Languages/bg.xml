@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Language code="bg" name="Български">
+  <Text key="FormTitle">Търсене в Активна Директория v{0}, стартиран от: {1} </Text>
+
+  <Text key="FirstName">Име</Text>
+  <Text key="LastName">Фамилия</Text>
+  <Text key="DisplayName">Цяло Име</Text>
+  <Text key="Description">Описание</Text>
+  <Text key="Office">Офис</Text>
+  <Text key="Phone">Телефон</Text>
+  <Text key="Phone2">Телефон 2</Text>
+  <Text key="Email">Е-поща</Text>
+  <Text key="UserName">Потребителско име</Text>
+  <Text key="ContainedInOU">В/под орг. единица</Text>
+  
+  <Text key="PhoneSearchDescription">Телефон (* - произволен брой знаци, ? - един единствен знак)</Text>
+  <Text key="Phone2SearchDescription">Телефон2 (* - произволен брой знаци, ? - един единствен знак)</Text>
+
+  <Text key="SearchButton">Търсене</Text>
+  <Text key="ClearButton">Изчистване</Text>
+  <Text key="ExportButton">Експорт в CSV</Text>
+  <Text key="HideDisabled">Скрий деактивираните потребители</Text>
+  <Text key="IncludeMailObjects">Включи групи и контакти</Text>
+
+  <Text key="Language">Език</Text>
+  <Text key="Help">Помощ</Text>
+
+  <Text key="StatusReady">Готово</Text>
+  <Text key="StatusWorking">Работи...</Text>
+  <Text key="StatusFound">Намерени обекти: {0}</Text>
+  <Text key="StatusNotFound">Няма намерени обекти</Text>
+  <Text key="StatusSearchingError">Грешка по време на търсенето.</Text>
+  <Text key="StatusExported">Експортирано в: {0}</Text>
+  <Text key="StatusNothingToExport">Няма данни за експортиране.</Text>
+  <Text key="StatusLastUpdate">Последно обновяване: {0}</Text>
+  <Text key="NoSearchCriteria">Въведете поне един критерий за търсене.</Text>
+
+  <Text key="ColumnUserName">Потребител</Text>
+  <Text key="ColumnDisplayName">Цяло Име</Text>
+  <Text key="ColumnObjectClass">Тип обект</Text>
+  <Text key="ColumnEnabled">Активен</Text>
+  <Text key="ColumnGivenName">Име</Text>
+  <Text key="ColumnSurname">Фамилия</Text>
+  <Text key="ColumnJobTitle">Длъжност</Text>
+  <Text key="ColumnDescription">Описание</Text>
+  <Text key="ColumnOffice">Офис</Text>
+  <Text key="ColumnEmail">Е-поща</Text>
+  <Text key="ColumnPhone">Телефон</Text>
+  <Text key="ColumnPhone2">Телефон 2</Text>
+  <Text key="ColumnOU">Орг. единица</Text>
+
+  <Text key="HelpTitle">Помощ за търсене в Active Directory</Text>
+  <Text key="CloseButton">Затвори</Text>
+</Language>

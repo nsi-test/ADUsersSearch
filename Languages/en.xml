@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Language code="en" name="English">
+  <Text key="FormTitle">AD User Search v{0}, running as: {1}</Text>
+
+  <Text key="FirstName">First Name</Text>
+  <Text key="LastName">Last Name</Text>
+  <Text key="DisplayName">Display Name</Text>
+  <Text key="Description">Description</Text>
+  <Text key="Office">Office</Text>
+  <Text key="Phone">Phone</Text>
+  <Text key="Phone2">Phone 2</Text>
+  <Text key="Email">E-mail</Text>
+  <Text key="UserName">Username</Text>
+  <Text key="ContainedInOU">Contained in/under OU</Text>
+  
+  <Text key="PhoneSearchDescription">Phone (use * as wildcard, ? as single character)</Text>
+  <Text key="Phone2SearchDescription">Phone2 (use * as wildcard, ? as single character)</Text>
+
+  <Text key="SearchButton">Search</Text>
+  <Text key="ClearButton">Clear</Text>
+  <Text key="ExportButton">Export CSV</Text>
+  <Text key="HideDisabled">Hide disabled users</Text>
+  <Text key="IncludeMailObjects">Include groups and contacts</Text>
+
+  <Text key="Language">Language</Text>
+  <Text key="Help">Help</Text>
+
+  <Text key="StatusReady">Ready</Text>
+  <Text key="StatusWorking">Working...</Text>
+  <Text key="StatusFound">{0} user/object(s) found.</Text>
+  <Text key="StatusNotFound">No results found.</Text>
+  <Text key="StatusSearchingError">Error occurred while searching.</Text>
+  <Text key="StatusExported">Exported to: {0}</Text>
+  <Text key="StatusNothingToExport">No data to export.</Text>
+  <Text key="StatusLastUpdate">Last updated: {0}</Text>
+  <Text key="NoSearchCriteria">Please enter at least one search criterion.</Text>
+
+  <Text key="ColumnUserName">Username</Text>
+  <Text key="ColumnDisplayName">Display Name</Text>
+  <Text key="ColumnObjectClass">Object type</Text>
+  <Text key="ColumnEnabled">Enabled</Text>
+  <Text key="ColumnGivenName">First Name</Text>
+  <Text key="ColumnSurname">Last Name</Text>
+  <Text key="ColumnJobTitle">Job Title</Text>
+  <Text key="ColumnDescription">Description</Text>
+  <Text key="ColumnOffice">Office</Text>
+  <Text key="ColumnEmail">E-mail</Text>
+  <Text key="ColumnPhone">Phone</Text>
+  <Text key="ColumnPhone2">Phone 2</Text>
+  <Text key="ColumnOU">Org. Unit</Text>
+
+  <Text key="HelpTitle">AD User Search Help</Text>
+  <Text key="CloseButton">Close</Text>
+</Language>

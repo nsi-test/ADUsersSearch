@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
 <!-- Fill in your configuration here -->
+  <Interface>
+    <Language code="en" />
+  </Interface>
   <DomainSearchBases>
     <!-- Search base for mail/contacts -  all users -->
     <Root distinguishedName="DC=example,DC=com"  />

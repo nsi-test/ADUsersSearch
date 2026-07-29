@@ -2,6 +2,7 @@ Microsoft/
 separ/
 old/
 pics/
+help_temp/
 *.txt
 *.config
 *.exe
